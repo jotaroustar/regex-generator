@@ -1,0 +1,652 @@
+<!-- Copyright © 2026 jotarou.com. All rights reserved. Unauthorized copying or commercial use is prohibited. -->
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>正则表达式生成器 | jotarou.com</title>
+<style>
+
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f5f0e8;--bg-card:#ede7dc;--bg-in:#faf7f3;
+  --tx:#2c1f0e;--tx-m:#7a6a54;--tx-l:#b8a89a;
+  --ac:#d4622a;--ac-h:#b8511f;--ac-bg:rgba(212,98,42,.12);
+  --bd:#d4c5ae;--bd-l:#e8dece;
+  --ok:#4a7c59;--ok-bg:rgba(74,124,89,.1);
+  --warn:#d97706;--warn-bg:rgba(217,119,6,.1);
+  --err:#c0392b;--err-bg:rgba(192,57,43,.1);
+  --r:10px;--rs:6px;
+}
+[data-theme=dark]{
+  --bg:#1a1209;--bg-card:#241a0d;--bg-in:#201508;
+  --tx:#e8dece;--tx-m:#a89070;--tx-l:#786050;
+  --ac:#e07040;--ac-h:#c85e30;--ac-bg:rgba(224,112,64,.15);
+  --bd:#3d2e18;--bd-l:#2e2010;
+  --ok:#5a9c70;--ok-bg:rgba(90,156,112,.15);
+  --warn:#f59e0b;--warn-bg:rgba(245,158,11,.12);
+  --err:#e05040;--err-bg:rgba(224,80,64,.12);
+}
+body{background:var(--bg);color:var(--tx);font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif;font-size:15px;line-height:1.65;min-height:100vh}
+a{color:var(--ac);text-decoration:none}
+code,.mono{font-family:'SF Mono',Consolas,Monaco,'Courier New',monospace}
+
+/* Header */
+.hdr{background:var(--bg-card);border-bottom:1px solid var(--bd);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200}
+.hdr-l{display:flex;align-items:center;gap:12px}
+.h-back{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:var(--rs);background:var(--bg);color:var(--tx-m);border:1px solid var(--bd);font-size:17px;transition:.15s}
+.h-back:hover{background:var(--ac-bg);color:var(--ac);border-color:var(--ac)}
+.hdr-title{font-size:15px;font-weight:700}
+.hdr-sub{font-size:11px;color:var(--tx-m);margin-top:1px}
+.hdr-r{display:flex;gap:8px;position:relative}
+.icon-btn{width:32px;height:32px;border-radius:var(--rs);background:var(--bg);border:1px solid var(--bd);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:.15s;color:var(--tx-m)}
+.icon-btn:hover{background:var(--ac-bg);border-color:var(--ac)}
+.icon-btn.has-key{color:var(--ok);border-color:var(--ok)}
+
+/* Key popover */
+.key-pop{position:absolute;top:42px;right:0;width:300px;background:var(--bg-card);border:1px solid var(--bd);border-radius:var(--r);padding:16px;box-shadow:0 8px 24px rgba(0,0,0,.15);z-index:300;display:none}
+.key-pop.show{display:block}
+.key-pop-title{font-size:13px;font-weight:700;margin-bottom:10px}
+
+/* Layout */
+.main{max-width:1280px;margin:0 auto;padding:22px 18px 60px}
+
+/* Card */
+.card{background:var(--bg-card);border:1px solid var(--bd);border-radius:var(--r);padding:18px;margin-bottom:14px}
+.card-title{font-size:13px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.card-title .opt{color:var(--tx-m);font-size:11px}
+
+/* Form */
+.fg{margin-bottom:12px}
+.fg label{display:block;font-size:12px;color:var(--tx-m);margin-bottom:5px}
+.fg input,.fg textarea,.fg select{width:100%;background:var(--bg-in);border:1px solid var(--bd);border-radius:var(--rs);padding:9px 11px;font-size:14px;color:var(--tx);font-family:inherit;outline:none;transition:.15s}
+.fg input:focus,.fg textarea:focus,.fg select:focus{border-color:var(--ac)}
+.fg textarea{resize:vertical;min-height:72px;line-height:1.5}
+.key-wrap{display:flex;gap:6px}
+.key-wrap input{flex:1}
+.key-eye{width:38px;background:var(--bg-in);border:1px solid var(--bd);border-radius:var(--rs);cursor:pointer;color:var(--tx-m)}
+.key-link{font-size:12px;display:inline-block;margin-top:4px}
+
+/* Scenario tags */
+.tag-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.tag{padding:6px 13px;border-radius:999px;background:var(--bg-in);border:1px solid var(--bd);font-size:12.5px;cursor:pointer;color:var(--tx-m);transition:.15s;white-space:nowrap}
+.tag:hover{border-color:var(--ac);color:var(--ac)}
+.tag.active{background:var(--ac-bg);border-color:var(--ac);color:var(--ac);font-weight:600}
+
+/* Lang select row */
+.lang-row{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.lang-btn{padding:7px 14px;border-radius:var(--rs);background:var(--bg-in);border:1px solid var(--bd);font-size:13px;cursor:pointer;color:var(--tx-m);transition:.15s}
+.lang-btn.active{background:var(--ac);border-color:var(--ac);color:#fff;font-weight:600}
+
+/* Buttons */
+.btn-pri{background:var(--ac);color:#fff;border:none;border-radius:var(--rs);padding:10px 18px;font-size:14px;font-weight:600;cursor:pointer;transition:.15s}
+.btn-pri:hover{background:var(--ac-h)}
+.btn-pri:disabled{opacity:.5;cursor:not-allowed}
+.btn-copy{background:var(--bg-in);color:var(--tx-m);border:1px solid var(--bd);border-radius:var(--rs);padding:9px 15px;font-size:13px;cursor:pointer;transition:.15s}
+.btn-copy:hover{border-color:var(--ac);color:var(--ac)}
+.btn-row{display:flex;gap:8px;margin-top:12px}
+
+/* Workspace two-column */
+.workspace{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:880px){.workspace{grid-template-columns:1fr}}
+
+/* Result pattern box */
+.pattern-box{background:var(--bg-in);border:1px solid var(--bd);border-radius:var(--rs);padding:14px;margin-bottom:10px;position:relative}
+.pattern-text{font-family:'SF Mono',Consolas,Monaco,monospace;font-size:14px;word-break:break-all;color:var(--ac);line-height:1.6;padding-right:70px}
+.pattern-copy{position:absolute;top:10px;right:10px;font-size:11px}
+.pattern-flags{margin-top:8px;font-size:12px;color:var(--tx-m)}
+.pattern-flags b{color:var(--tx)}
+.pattern-desc{font-size:13px;color:var(--tx-m);margin-bottom:10px;line-height:1.6}
+.dialect-hint{font-size:11.5px;color:var(--warn);background:var(--warn-bg);border-radius:var(--rs);padding:8px 10px;margin-top:8px;line-height:1.5}
+
+/* Stream preview */
+.stream-box{background:var(--bg-in);border:1px solid var(--bd-l);border-radius:var(--rs);padding:12px;font-size:13px;color:var(--tx-m);min-height:40px;white-space:pre-wrap;font-family:monospace}
+
+/* Test area */
+.test-line{background:var(--bg-in);border:1px solid var(--bd);border-radius:var(--rs);padding:9px 11px;margin-bottom:6px;font-family:monospace;font-size:13px;word-break:break-all;line-height:1.6;font-variant-numeric:tabular-nums}
+.test-line.matched{border-color:var(--ok);background:var(--ok-bg)}
+.test-line.unmatched{border-color:var(--bd);opacity:.65}
+.test-line mark{background:rgba(74,124,89,.35);color:var(--tx);border-radius:3px;padding:0 2px}
+[data-theme=dark] .test-line mark{background:rgba(90,156,112,.4)}
+.test-status{display:inline-block;font-size:11px;font-weight:700;margin-right:6px}
+.test-status.ok{color:var(--ok)}
+.test-status.no{color:var(--tx-l)}
+.test-groups{font-size:11.5px;color:var(--tx-m);margin-top:4px;padding-left:4px}
+.test-groups b{color:var(--ac)}
+
+/* Feedback box */
+.feedback-box{margin-top:10px}
+.feedback-box textarea{min-height:56px}
+
+/* Code export */
+.code-box{background:#1e1812;border-radius:var(--rs);padding:14px;font-family:monospace;font-size:13px;color:#e8dece;white-space:pre-wrap;word-break:break-all;line-height:1.7;position:relative;margin-top:8px}
+.code-box .kw{color:#e07040}
+.code-box .str{color:#8fb88f}
+.code-box .cm{color:#7a6a54}
+[data-theme=dark] .code-box{background:#0f0a05}
+/* 浅色模式：换浅米/浅灰底，语法色需重新搭配以保证对比度，不能直接套用暗底配色 */
+[data-theme=light] .code-box{background:#ebe4d7;color:#3a2c18;border:1px solid var(--bd)}
+[data-theme=light] .code-box .kw{color:#b8511f}
+[data-theme=light] .code-box .str{color:#4a7c59}
+[data-theme=light] .code-box .cm{color:#9a8a72}
+
+/* Template strip */
+.tpl-strip{display:flex;flex-wrap:wrap;gap:8px}
+.tpl-chip{padding:6px 12px;border-radius:var(--rs);background:var(--bg-in);border:1px solid var(--bd);font-size:12px;cursor:pointer;color:var(--tx-m);transition:.15s}
+.tpl-chip:hover{border-color:var(--ac);color:var(--ac)}
+
+.empty-hint{color:var(--tx-l);font-size:13px;text-align:center;padding:30px 10px}
+.panel-head{display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:700;margin-bottom:10px}
+.panel-head .count{font-size:11px;color:var(--tx-m);font-weight:400}
+
+/* Toast */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--tx);color:var(--bg);padding:10px 20px;border-radius:999px;font-size:13px;opacity:0;pointer-events:none;transition:.25s;z-index:999}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+footer{text-align:center;padding:18px 14px 26px;font-size:12px;color:var(--tx-m);line-height:1.7}
+
+.dim-note{font-size:11px;color:var(--tx-l);margin-top:6px}
+.key-missing-hint{font-size:12px;color:var(--warn);background:var(--warn-bg);border-radius:var(--rs);padding:8px 10px;margin-top:8px;cursor:pointer;display:none}
+.key-missing-hint.show{display:block}
+</style>
+</head>
+<body>
+
+<header class="hdr">
+  <div class="hdr-l">
+    <a href="/tools/" class="h-back" title="工具列表">&#x229E;</a>
+    <div>
+      <div class="hdr-title">🔣 正则表达式生成器</div>
+      <div class="hdr-sub">自然语言生成 · 实时测试验证 · 一键导出代码</div>
+    </div>
+  </div>
+  <div class="hdr-r">
+    <button class="icon-btn" id="keyBtn" onclick="toggleKeyPop()" title="API Key设置">🔑</button>
+    <button class="icon-btn" id="themeBtn" onclick="toggleTheme()" title="切换主题">🌙</button>
+    <div class="key-pop" id="keyPop">
+      <div class="key-pop-title">API Key</div>
+      <div class="fg">
+        <label>在 jotarou.com 注册获取（仅用于AI生成；本地测试验证无需Key）</label>
+        <div class="key-wrap">
+          <input type="password" id="apiKey" placeholder="sk-xxxx...">
+          <button class="key-eye" onclick="toggleKeyVis()">👁</button>
+        </div>
+        <a class="key-link" href="https://jotarou.com" target="_blank">→ 前往 jotarou.com 获取 Key</a>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="main">
+
+  <div class="card">
+    <div class="card-title">描述你的需求</div>
+    <div class="tag-row" id="scenarioTags"></div>
+    <div class="fg">
+      <textarea id="descInput" placeholder="例如：提取日志中的IP地址和时间戳，格式如 2026-06-19 10:23:01"></textarea>
+    </div>
+    <div class="card-title" style="margin-bottom:8px;font-size:12px">目标语言/方言</div>
+    <div class="lang-row" id="langRow"></div>
+    <button class="btn-pri" id="genBtn">生成正则</button>
+    <div class="key-missing-hint" id="keyMissingHint" onclick="toggleKeyPop()">还没填 API Key，点此设置 →</div>
+  </div>
+
+  <div class="workspace">
+    <div class="card">
+      <div class="panel-head"><span>生成结果</span><span class="count" id="genStatus"></span></div>
+      <div id="resultArea"><div class="empty-hint">填写需求并点击"生成正则"开始</div></div>
+    </div>
+
+    <div class="card">
+      <div class="panel-head"><span>测试验证</span><span class="count" id="testCount">本地执行 · 无需AI</span></div>
+      <div class="fg">
+        <textarea id="testInput" placeholder="粘贴测试数据，每行一条..."></textarea>
+      </div>
+      <div id="testResults"><div class="empty-hint">生成正则后，在上方粘贴测试数据查看匹配结果</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📌 常用模板（点击直接体验，无需AI）</div>
+    <div class="tpl-strip" id="tplStrip"></div>
+  </div>
+
+</main>
+
+<div class="toast" id="toast"></div>
+
+<footer>
+  <div>输入内容经 jotarou.com API 网关转发至大模型服务商，网关不持久化对话内容</div>
+  <div><a href="/tools/">工具列表</a> · <a href="https://jotarou.com" target="_blank">jotarou.com</a> · © 2026 jotarou.com</div>
+  <div style="margin-top:4px;font-size:11px">测试验证基于浏览器JS正则引擎，与目标语言实际运行环境可能存在细微差异，重要场景请自行复核</div>
+</footer>
+
+<script>
+
+// ======= Escape =======
+function esc(s){
+  if(s==null) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;');
+}
+
+// ======= Theme =======
+function initTheme(){
+  const t = localStorage.getItem('regex-theme') || 'light';
+  document.documentElement.setAttribute('data-theme', t);
+  document.getElementById('themeBtn').textContent = t==='dark' ? '☀️' : '🌙';
+}
+function toggleTheme(){
+  const cur = document.documentElement.getAttribute('data-theme');
+  const nxt = cur==='dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', nxt);
+  localStorage.setItem('regex-theme', nxt);
+  document.getElementById('themeBtn').textContent = nxt==='dark' ? '☀️' : '🌙';
+}
+
+// ======= Toast =======
+let toastTimer;
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove('show'), 2200);
+}
+
+// ======= API Key =======
+function initApiKey(){
+  const inp = document.getElementById('apiKey');
+  const saved = localStorage.getItem('regex-apikey');
+  if(saved) inp.value = saved;
+  inp.addEventListener('change', ()=>{ localStorage.setItem('regex-apikey', inp.value.trim()); syncKeyStatus(); });
+  inp.addEventListener('input', debounce(syncKeyStatus, 200));
+  syncKeyStatus();
+  document.addEventListener('click', (e)=>{
+    const pop = document.getElementById('keyPop');
+    const btn = document.getElementById('keyBtn');
+    if(pop.classList.contains('show') && !pop.contains(e.target) && e.target !== btn){
+      pop.classList.remove('show');
+    }
+  });
+}
+function toggleKeyVis(){
+  const inp = document.getElementById('apiKey');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+}
+function toggleKeyPop(){
+  document.getElementById('keyPop').classList.toggle('show');
+}
+function syncKeyStatus(){
+  const hasKey = document.getElementById('apiKey').value.trim().length > 0;
+  document.getElementById('keyBtn').classList.toggle('has-key', hasKey);
+  document.getElementById('keyMissingHint').classList.toggle('show', !hasKey);
+}
+
+// ======= Scenario tags =======
+const SCENARIOS = [
+  {label:'日志提取', tpl:'提取日志中的IP地址、时间戳和日志级别(ERROR/WARN/INFO)'},
+  {label:'字符串清洗', tpl:'去除字符串首尾空白以及中间多余的空格，只保留单个空格分隔'},
+  {label:'爬虫数据', tpl:'从HTML片段中提取所有<a>标签的href链接地址'},
+  {label:'表单校验', tpl:'校验用户输入的密码：至少8位，包含大小写字母和数字'},
+  {label:'文件名匹配', tpl:'匹配文件名中以 .jpg .png .jpeg 结尾的图片文件'},
+  {label:'自定义', tpl:''}
+];
+function renderScenarios(){
+  const box = document.getElementById('scenarioTags');
+  box.innerHTML = SCENARIOS.map((s,i)=>`<div class="tag" data-i="${i}">${esc(s.label)}</div>`).join('');
+  box.querySelectorAll('.tag').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      box.querySelectorAll('.tag').forEach(t=>t.classList.remove('active'));
+      el.classList.add('active');
+      const s = SCENARIOS[+el.dataset.i];
+      if(s.tpl) document.getElementById('descInput').value = s.tpl;
+      else document.getElementById('descInput').focus();
+    });
+  });
+}
+
+// ======= Language dialects =======
+const LANGS = [
+  {id:'js', label:'JavaScript'},
+  {id:'python', label:'Python'},
+  {id:'java', label:'Java'},
+  {id:'pcre', label:'PCRE'}
+];
+let curLang = 'js';
+function renderLangs(){
+  const box = document.getElementById('langRow');
+  box.innerHTML = LANGS.map(l=>`<div class="lang-btn ${l.id===curLang?'active':''}" data-id="${l.id}">${esc(l.label)}</div>`).join('');
+  box.querySelectorAll('.lang-btn').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      curLang = el.dataset.id;
+      box.querySelectorAll('.lang-btn').forEach(b=>b.classList.remove('active'));
+      el.classList.add('active');
+      if(lastResult){ renderResult(); }
+    });
+  });
+}
+
+// ======= Template library (引流入口，无需AI) =======
+const TEMPLATES = [
+  {label:'手机号(中国大陆)', pattern:'1[3-9]\\d{9}', flags:'g', desc:'匹配中国大陆11位手机号', descText:'匹配中国大陆11位手机号', sample:'我的电话是13812345678，请联系\n这里没有手机号\n备用号码15900001111也可以'},
+  {label:'邮箱地址', pattern:'[\\w.-]+@[\\w-]+\\.[a-zA-Z]{2,}', flags:'g', desc:'匹配常见邮箱格式', descText:'匹配常见邮箱格式', sample:'联系邮箱：zhang.san@example.com\n这行没有邮箱地址\n备用邮箱 li-wei123@company.cn 也可以用'},
+  {label:'身份证号(18位)', pattern:'[1-9]\\d{5}(18|19|20)\\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\\d|3[01])\\d{3}[\\dXx]', flags:'g', desc:'匹配18位身份证号', descText:'匹配18位身份证号（简化规则，不校验校验码）', sample:'身份证号：110101199003078515\n这行没有身份证号\n备用号 31010220000101123X 也常见'},
+  {label:'URL链接', pattern:'https?:\\/\\/[\\w\\-.]+(:\\d+)?(\\/[\\w\\-./?%&=]*)?', flags:'g', desc:'匹配http/https链接', descText:'匹配http/https链接', sample:'访问 https://jotarou.com/tools/ 查看详情\n这行没有链接\n也支持 http://example.com:8080/path?a=1 这种带端口带参数的'},
+  {label:'IP地址(IPv4)', pattern:'\\b(?:\\d{1,3}\\.){3}\\d{1,3}\\b', flags:'g', desc:'匹配IPv4地址，不校验数值范围', descText:'匹配IPv4地址（不校验数值范围，如999.999.999.999也会被匹配）', sample:'服务器IP为 192.168.1.100\n这行没有IP地址\n备用网关 10.0.0.1 同样适用'},
+  {label:'日期(YYYY-MM-DD)', pattern:'\\d{4}-\\d{2}-\\d{2}', flags:'g', desc:'匹配 年-月-日 格式日期', descText:'匹配 年-月-日 格式日期', sample:'今天是 2026-06-19，请准时提交\n这行没有日期\n截止日期为 2026-07-01 不可延期'},
+  {label:'中文字符', pattern:'[\\u4e00-\\u9fa5]+', flags:'g', desc:'匹配连续中文字符片段', descText:'匹配连续中文字符片段', sample:'这是一段中文文本 mixed with English\n12345 only numbers here\n纯中文测试句子'},
+  {label:'HTML标签', pattern:'<[^>]+>', flags:'g', desc:'匹配HTML标签(粗略，不处理属性内含尖括号的边界情况)', descText:'匹配HTML标签（粗略匹配，不处理属性值中含尖括号的边界情况）', sample:'<div class="card">内容</div>\n这行是纯文本没有标签\n<a href="https://jotarou.com">链接</a>'}
+];
+function renderTemplates(){
+  const box = document.getElementById('tplStrip');
+  box.innerHTML = TEMPLATES.map((t,i)=>`<div class="tpl-chip" data-i="${i}">${esc(t.label)}</div>`).join('');
+  box.querySelectorAll('.tpl-chip').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      const t = TEMPLATES[+el.dataset.i];
+      lastResult = { pattern: t.pattern, flags: t.flags, desc: t.desc, dialectNote: '' };
+      feedbackRounds = 0;
+      document.getElementById('descInput').value = t.descText;
+      document.getElementById('testInput').value = t.sample;
+      renderResult();
+      runTest();
+      showToast('已加载模板，左侧描述与右侧测试数据已自动填好，可直接用AI微调');
+    });
+  });
+}
+
+// ======= Generation (SSE streaming) =======
+let lastResult = null; // {pattern, flags, desc, dialectNote}
+let streamRaw = '';
+let feedbackRounds = 0;
+const MAX_FEEDBACK_ROUNDS = 3;
+
+const SYSTEM_PROMPT = `你是一个正则表达式生成助手。根据用户的自然语言描述，生成一个适用于指定语言/方言的正则表达式。
+严格只返回如下JSON格式，不要任何多余文字、不要markdown代码块标记：
+{"pattern":"正则表达式本体(不含首尾的/或引号)","flags":"建议的标志位，如 g i m，没有则空字符串","desc":"一句话说明这个正则的作用，20字以内","dialectNote":"如果该正则在不同语言/方言间存在语法差异需要特别注意，简要说明；没有则空字符串"}`;
+
+async function generate(isRefine){
+  const apiKey = document.getElementById('apiKey').value.trim();
+  if(!apiKey){ showToast('请先填写 API Key'); syncKeyStatus(); toggleKeyPop(); return; }
+  const desc = document.getElementById('descInput').value.trim();
+  if(!desc){ showToast('请先描述你的需求'); return; }
+
+  const genBtn = document.getElementById('genBtn');
+  genBtn.disabled = true;
+  document.getElementById('genStatus').textContent = '生成中...';
+  streamRaw = '';
+
+  let userMsg = `目标语言/方言: ${curLang}\n需求描述: ${desc}`;
+  if(isRefine && lastResult){
+    const fb = document.getElementById('feedbackInput');
+    const fbText = fb ? fb.value.trim() : '';
+    userMsg = `目标语言/方言: ${curLang}\n需求描述: ${desc}\n\n上一次生成的正则: ${lastResult.pattern}\n用户反馈(哪里不对): ${fbText}\n\n请根据反馈调整正则，仍按原JSON格式返回。`;
+  }
+
+  const chars = desc.length;
+  const model = chars <= 300 ? 'gpt-4o-mini' : 'deepseek-chat';
+
+  document.getElementById('resultArea').innerHTML = `<div class="stream-box" id="streamBox">连接中...</div>`;
+
+  try{
+    const res = await fetch('https://jotarou.com/v1/chat/completions', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+apiKey},
+      body: JSON.stringify({
+        model: model,
+        max_tokens: 1000,
+        stream: true,
+        messages:[
+          {role:'system', content: SYSTEM_PROMPT},
+          {role:'user', content: userMsg}
+        ]
+      })
+    });
+    if(!res.ok){
+      let msg = '请求失败 ('+res.status+')';
+      try{ const d = await res.json(); msg = (d.error && d.error.message) || msg; }catch(e){}
+      throw new Error(msg);
+    }
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buf = '';
+    while(true){
+      const {done, value} = await reader.read();
+      if(done) break;
+      buf += decoder.decode(value, {stream:true});
+      const lines = buf.split('\n');
+      buf = lines.pop();
+      for(const line of lines){
+        const t = line.trim();
+        if(!t || t === 'data: [DONE]') continue;
+        if(t.startsWith('data: ')){
+          try{
+            const j = JSON.parse(t.slice(6));
+            const delta = (j.choices && j.choices[0] && j.choices[0].delta && j.choices[0].delta.content) || '';
+            if(delta){
+              streamRaw += delta;
+              const sb = document.getElementById('streamBox');
+              if(sb) sb.textContent = streamRaw;
+            }
+          }catch(e){}
+        }
+      }
+    }
+
+    const parsed = parseJsonWithFallback(streamRaw);
+    if(parsed && parsed.pattern){
+      lastResult = parsed;
+      if(isRefine) feedbackRounds++;
+      renderResult();
+      runTest();
+    } else {
+      document.getElementById('resultArea').innerHTML = `<div class="dialect-hint">模型返回内容无法解析，原始输出如下：</div><div class="stream-box">${esc(streamRaw)}</div>`;
+    }
+  }catch(e){
+    document.getElementById('resultArea').innerHTML = `<div class="dialect-hint">生成失败：${esc(e.message)}</div>`;
+  }
+  genBtn.disabled = false;
+  document.getElementById('genStatus').textContent = '';
+}
+
+function parseJsonWithFallback(raw){
+  if(!raw) return null;
+  let s = raw.trim();
+  s = s.replace(/^```json\s*/i,'').replace(/^```\s*/,'').replace(/```\s*$/,'');
+  try{ return JSON.parse(s); }catch(e){}
+  const m = s.match(/\{[\s\S]*\}/);
+  if(m){ try{ return JSON.parse(m[0]); }catch(e){} }
+  return null;
+}
+
+// ======= Render result + code export =======
+function renderResult(){
+  if(!lastResult){ document.getElementById('resultArea').innerHTML = '<div class="empty-hint">填写需求并点击"生成正则"开始</div>'; return; }
+  const r = lastResult;
+  const dialectHtml = r.dialectNote ? `<div class="dialect-hint">⚠ ${esc(r.dialectNote)}</div>` : '';
+  const canRefine = feedbackRounds < MAX_FEEDBACK_ROUNDS;
+  document.getElementById('resultArea').innerHTML = `
+    <div class="pattern-desc">${esc(r.desc||'')}</div>
+    <div class="pattern-box">
+      <div class="pattern-text" id="patternText">${esc(r.pattern)}</div>
+      <button class="btn-copy pattern-copy" onclick="copyPattern()">复制</button>
+      <div class="pattern-flags">标志位: <b>${esc(r.flags||'(无)')}</b></div>
+      ${dialectHtml}
+    </div>
+    <div class="feedback-box">
+      <div class="fg"><label>不满意？描述哪几行没匹配对（剩余可微调 ${MAX_FEEDBACK_ROUNDS - feedbackRounds} 次）</label>
+      <textarea id="feedbackInput" placeholder="例如：第2、3行应该匹配到但没匹配..."></textarea></div>
+      <button class="btn-copy" id="refineBtn" ${canRefine?'':'disabled'} onclick="generate(true)">${canRefine?'根据反馈重新生成':'已达微调上限，请重新描述需求'}</button>
+    </div>
+    <div class="card-title" style="margin-top:14px;font-size:12px">导出代码片段</div>
+    <div class="code-box" id="codeBox">${buildCodeSnippet(r, curLang)}</div>
+    <button class="btn-copy" style="margin-top:8px" onclick="copyCode()">复制代码</button>
+  `;
+}
+
+function copyPattern(){
+  if(!lastResult) return;
+  navigator.clipboard.writeText(lastResult.pattern).then(()=>showToast('正则已复制'));
+}
+function copyCode(){
+  const box = document.getElementById('codeBox');
+  if(!box) return;
+  navigator.clipboard.writeText(box.textContent).then(()=>showToast('代码已复制'));
+}
+
+function buildCodeSnippet(r, lang){
+  const pattern = esc(r.pattern);
+  const flags = r.flags || '';
+  const sampleLine = esc(currentTestLines()[0] || '示例文本');
+  const kw = s => `<span class="kw">${s}</span>`;
+  const str = s => `<span class="str">${s}</span>`;
+  const cm = s => `<span class="cm">${s}</span>`;
+
+  if(lang === 'python'){
+    const pyFlags = flags.includes('i') ? ', re.IGNORECASE' : '';
+    return [
+      `${kw('import')} re`,
+      '',
+      `pattern = r${str('"'+pattern+'"')}`,
+      `text = ${str('"'+sampleLine+'"')}`,
+      `matches = re.findall(pattern, text${pyFlags})`,
+      `print(matches)`
+    ].join('\n');
+  }
+  if(lang === 'java'){
+    return [
+      `${kw('import')} java.util.regex.*;`,
+      '',
+      `Pattern pattern = Pattern.compile(${str('"'+pattern+'"')}${flags.includes('i')?', Pattern.CASE_INSENSITIVE':''});`,
+      `Matcher matcher = pattern.matcher(${str('"'+sampleLine+'"')});`,
+      `${kw('while')} (matcher.find()) {`,
+      `    System.out.println(matcher.group());`,
+      `}`
+    ].join('\n');
+  }
+  if(lang === 'pcre'){
+    return [
+      cm('# PCRE 正则本体：'),
+      pattern,
+      '',
+      cm('# 命令行示例 (grep -P)：'),
+      `echo ${str('"'+sampleLine+'"')} | grep -P ${str('"'+pattern+'"')}`
+    ].join('\n');
+  }
+  // default JS
+  return [
+    `${kw('const')} pattern = /${pattern}/${flags};`,
+    `${kw('const')} text = ${str('"'+sampleLine+'"')};`,
+    `${kw('const')} matches = text.match(pattern);`,
+    `console.log(matches);`
+  ].join('\n');
+}
+
+// ======= Local regex test engine (零成本，纯前端，Worker隔离防卡死) =======
+// 说明：灾难性回溯可能发生在单次 re.exec() 调用内部，主线程同步执行无法从外部中断。
+// 因此测试逻辑放入 Web Worker 执行，主线程设超时，超时则 terminate() 强制终止，避免冻结页面。
+const TEST_TIMEOUT_MS = 1000;
+let testWorker = null;
+let testWorkerTimer = null;
+
+function getTestWorker(){
+  if(testWorker) return testWorker;
+  const workerSrc = `
+self.onmessage = function(e){
+  const { pattern, flags, lines } = e.data;
+  let re;
+  try{ re = new RegExp(pattern, flags); }
+  catch(err){ self.postMessage({error: err.message}); return; }
+  const results = [];
+  lines.forEach(line=>{
+    re.lastIndex = 0;
+    let matched = false, lastIdx = 0, groupsInfo = [], m, safety = 0;
+    let segs = [];
+    while((m = re.exec(line)) !== null && safety < 200){
+      safety++;
+      matched = true;
+      segs.push({text: line.slice(lastIdx, m.index), mark: m[0]});
+      lastIdx = m.index + m[0].length;
+      if(m.length > 1) groupsInfo.push(m.slice(1));
+      if(m[0].length === 0) re.lastIndex++;
+    }
+    segs.push({text: line.slice(lastIdx), mark: null});
+    results.push({line, matched, segs, groupsInfo});
+  });
+  self.postMessage({results});
+};`;
+  const blob = new Blob([workerSrc], {type:'application/javascript'});
+  testWorker = new Worker(URL.createObjectURL(blob));
+  return testWorker;
+}
+
+function currentTestLines(){
+  return document.getElementById('testInput').value.split('\n').filter(l=>l.length>0);
+}
+
+function runTest(){
+  const box = document.getElementById('testResults');
+  if(!lastResult){ box.innerHTML = '<div class="empty-hint">先生成或选择一个正则</div>'; return; }
+  const lines = currentTestLines();
+  if(lines.length === 0){ box.innerHTML = '<div class="empty-hint">在上方粘贴测试数据，每行一条</div>'; return; }
+
+  let flags = lastResult.flags || '';
+  if(!flags.includes('g')) flags += 'g';
+
+  // 先用主线程做一次极小代价的语法校验，语法错误直接提示，不必启动worker
+  try{ new RegExp(lastResult.pattern, flags); }
+  catch(e){ box.innerHTML = `<div class="dialect-hint">正则语法错误，浏览器JS引擎无法解析：${esc(e.message)}</div>`; return; }
+
+  box.innerHTML = '<div class="empty-hint">正在测试...</div>';
+
+  // 终止上一次未完成的测试任务，避免任务堆积
+  if(testWorker){ testWorker.terminate(); testWorker = null; }
+  if(testWorkerTimer) clearTimeout(testWorkerTimer);
+
+  const worker = getTestWorker();
+  testWorkerTimer = setTimeout(()=>{
+    worker.terminate();
+    testWorker = null;
+    box.innerHTML = `<div class="dialect-hint">⏱ 测试超时（超过${TEST_TIMEOUT_MS}ms），疑似存在灾难性回溯风险，建议检查嵌套量词写法（如 (a+)+ (a*)* 这类结构），已自动中断以避免卡死页面</div>`;
+    showToast('检测到可能的灾难性回溯，已中断测试');
+  }, TEST_TIMEOUT_MS);
+
+  worker.onmessage = function(e){
+    clearTimeout(testWorkerTimer);
+    if(e.data.error){
+      box.innerHTML = `<div class="dialect-hint">正则语法错误：${esc(e.data.error)}</div>`;
+      return;
+    }
+    let html = '';
+    e.data.results.forEach(r=>{
+      const cls = r.matched ? 'matched' : 'unmatched';
+      const statusHtml = r.matched ? '<span class="test-status ok">✓ 匹配</span>' : '<span class="test-status no">✗ 未匹配</span>';
+      let lineHtml = r.segs.map(s => esc(s.text) + (s.mark!=null ? '<mark>'+esc(s.mark)+'</mark>' : '')).join('');
+      if(!lineHtml) lineHtml = esc(r.line);
+      const groupsHtml = r.groupsInfo.length ? `<div class="test-groups"><b>捕获组:</b> ${r.groupsInfo.map(g=>g.map((x,i)=>`组${i+1}: ${esc(x==null?'(空)':x)}`).join(' / ')).join(' ｜ ')}</div>` : '';
+      html += `<div class="test-line ${cls}">${statusHtml}${lineHtml}${groupsHtml}</div>`;
+    });
+    box.innerHTML = html;
+  };
+
+  worker.postMessage({ pattern: lastResult.pattern, flags, lines });
+}
+
+// ======= Init & events =======
+function init(){
+  initTheme();
+  initApiKey();
+  renderScenarios();
+  renderLangs();
+  renderTemplates();
+  document.getElementById('genBtn').addEventListener('click', ()=>{ feedbackRounds=0; generate(false); });
+  document.getElementById('testInput').addEventListener('input', debounce(runTest, 150));
+}
+function debounce(fn, ms){
+  let t;
+  return function(...args){ clearTimeout(t); t = setTimeout(()=>fn.apply(this,args), ms); };
+}
+init();
+
+</script>
+</body>
+</html>
